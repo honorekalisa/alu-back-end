@@ -1,45 +1,29 @@
 #!/usr/bin/python3
-"""
-Exports user task data to a csv file
-"""
-from requests import get
-from json import dump
-from sys import argv
-
-
-def get_data(url):
-    """gets data from an api"""
-    request = get(url)
-
-    if request.status_code == 200:
-        return request.json()
-    else:
-        raise Exception(request.status_code)
-
-
-def main():
-    """program starting point"""
-    user_id = argv[1]
-
-    # Get user data
-    user_data_url = f'https://jsonplaceholder.typicode.com/users/{user_id}'
-    username = get_data(user_data_url)["username"]
-
-    # Get todos
-    todos_url = f'https://jsonplaceholder.typicode.com/todos?userId={user_id}'
-    todos = get_data(todos_url)
-
-    # Data object to write
-    data = {}
-    data[user_id] = []
-
-    for todo in todos:
-        data[user_id].append(
-            {'username': username, 'task': todo['title'], 'completed': todo['completed']})
-
-    with open(f'{user_id}.json', 'w') as f:
-        dump(data, f)
-
+"""Exports data in the JSON format"""
 
 if __name__ == "__main__":
-    main()
+
+    import json
+    import requests
+    import sys
+
+    userId = sys.argv[1]
+    user = requests.get("https://jsonplaceholder.typicode.com/users/{}"
+                        .format(userId))
+    todos = requests.get('https://jsonplaceholder.typicode.com/todos')
+    todos = todos.json()
+
+    todoUser = {}
+    taskList = []
+
+    for task in todos:
+        if task.get('userId') == int(userId):
+            taskDict = {"task": task.get('title'),
+                        "completed": task.get('completed'),
+                        "username": user.json().get('username')}
+            taskList.append(taskDict)
+    todoUser[userId] = taskList
+
+    filename = userId + '.json'
+    with open(filename, mode='w') as f:
+        json.dump(todoUser, f)
